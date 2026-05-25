@@ -1,0 +1,91 @@
+{
+  "name": "DevLog Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-push",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "4e3bc86c-b4dc-484d-bd67-663f6d1aece1",
+      "name": "Webhook",
+      "webhookId": "754c58a1-b9e7-40f5-a523-2b560d3cb751"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pobieramy zawartość 'body' z payloadu GitHuba przechwyconego przez Webhook\nconst payload = $input.all()[0].json.body;\n\n// Celujemy w obiekt z najnowszym commitem (head_commit)\nconst headCommit = payload.head_commit;\n\n// Zabezpieczenie: jeśli to zdarzenie nie zawiera commita (np. utworzenie pustego brancha)\nif (!headCommit) {\n  return [];\n}\n\n// Zwracamy czysty, sformatowany JSON z danymi gotowymi do wstrzyknięcia do bazy\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "cb6bc008-4ad0-4d2f-8cc2-11acb20372e8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "tableId": "=devlogs",
+        "dataToSend": "autoMapInputData"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "53c229f2-1137-43a3-b18c-3ae29a466100",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8O9ZdtqjPqLDTmgD",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3ed7e872-423a-4781-bf7a-3542264d9b1d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "758919c32b34f9786e1accdb755ce7bfbc1b60f9bd5e8d1249e038034fd5eacd"
+  },
+  "id": "WHLWt48WYSo65pXF",
+  "tags": []
+}
