@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Pobieramy zawartość 'body' z payloadu GitHuba przechwyconego przez Webhook\nconst payload = $input.all()[0].json.body;\n\n// Celujemy w obiekt z najnowszym commitem (head_commit)\nconst headCommit = payload.head_commit;\n\n// Zabezpieczenie: jeśli to zdarzenie nie zawiera commita (np. utworzenie pustego brancha)\nif (!headCommit) {\n  return [];\n}\n\n// Zwracamy czysty, sformatowany JSON z danymi gotowymi do wstrzyknięcia do bazy\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message\n};"
+        "jsCode": "// WERSJA 1.1 - [Multi-Tenant i Filtr Milestone]\n\n// Pobieramy zawartość 'body' z payloadu GitHuba przechwyconego przez Webhook\nconst payload = $input.all()[0].json.body;\n\n// Celujemy w obiekt z najnowszym commitem (head_commit) oraz wyciągamy nazwę repozytorium\nconst headCommit = payload.head_commit;\nconst repositoryName = payload.repository.name;\n\n// Zabezpieczenie: jeśli to zdarzenie nie zawiera commita (np. utworzenie pustego brancha)\nif (!headCommit) {\n  return [];\n}\n\n// Filtr Milestone: Instrukcja warunkowa sprawdzająca, czy wiadomość zaczyna się od [Milestone]\n// Jeśli nie, zwracamy pustą tablicę (n8n wstrzyma dalsze wykonywanie dla tego commita)\nif (!headCommit.message.startsWith(\"[Milestone]\")) {\n  return [];\n}\n\n// Zwracamy sformatowany JSON rozszerzony o pole project_name\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message,\n  project_name: repositoryName\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -32,17 +32,95 @@
     },
     {
       "parameters": {
-        "tableId": "=devlogs",
-        "dataToSend": "autoMapInputData"
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpMultipleHeadersAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"contents\": [{\n      \"parts\": [{\n        \"text\": \"Act as an elite Enterprise Software Architect. I will provide you with a git diff. Analyze the code changes and write a brief, professional release note for a changelog. Requirements: Language must be English. Tone: Engineering, concise, and business-value focused (like 'bAIplot.com Platform Inception'). No technical jargon like 'deleted line 5'. Maximum 2-3 sentences. \\n\\nGit Diff to analyze:\\n\" + $json.data\n      }]\n    }]\n  })\n}}",
+        "options": {}
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "ce663b2e-f669-4439-adc9-a3f9a57ec8d8",
+      "name": "Google_Gemini",
+      "credentials": {
+        "httpMultipleHeadersAuth": {
+          "id": "3ItB9QvUCLWwIQCs",
+          "name": "Google Gemini API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/Darek027/{{ $json.project_name }}/commits/{{ $json.commit_hash }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpMultipleHeadersAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3.diff"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
       "position": [
         416,
         0
       ],
+      "id": "4fbab5c8-a465-4989-987b-ee31a659623c",
+      "name": "Github",
+      "credentials": {
+        "httpMultipleHeadersAuth": {
+          "id": "xctnWHEtG83qeEbU",
+          "name": "GitHub Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "=devlogs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "commit_hash",
+              "fieldValue": "={{ $('Code in JavaScript').item.json.commit_hash }}"
+            },
+            {
+              "fieldId": "project_name",
+              "fieldValue": "={{ $('Code in JavaScript').item.json.project_name }}"
+            },
+            {
+              "fieldId": "message",
+              "fieldValue": "={{ $json.candidates[0].content.parts[0].text }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        832,
+        0
+      ],
       "id": "53c229f2-1137-43a3-b18c-3ae29a466100",
-      "name": "Create a row",
+      "name": "Supabase_Entry",
       "credentials": {
         "supabaseApi": {
           "id": "8O9ZdtqjPqLDTmgD",
@@ -68,7 +146,29 @@
       "main": [
         [
           {
-            "node": "Create a row",
+            "node": "Github",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google_Gemini": {
+      "main": [
+        [
+          {
+            "node": "Supabase_Entry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Github": {
+      "main": [
+        [
+          {
+            "node": "Google_Gemini",
             "type": "main",
             "index": 0
           }
@@ -81,7 +181,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "3ed7e872-423a-4781-bf7a-3542264d9b1d",
+  "versionId": "620ec184-bf8f-49bd-8408-54bc0adedb37",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "758919c32b34f9786e1accdb755ce7bfbc1b60f9bd5e8d1249e038034fd5eacd"
