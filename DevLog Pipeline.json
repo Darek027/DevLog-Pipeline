@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// WERSJA 1.1 - [Multi-Tenant i Filtr Milestone]\n\n// Pobieramy zawartość 'body' z payloadu GitHuba przechwyconego przez Webhook\nconst payload = $input.all()[0].json.body;\n\n// Celujemy w obiekt z najnowszym commitem (head_commit) oraz wyciągamy nazwę repozytorium\nconst headCommit = payload.head_commit;\nconst repositoryName = payload.repository.name;\n\n// Zabezpieczenie: jeśli to zdarzenie nie zawiera commita (np. utworzenie pustego brancha)\nif (!headCommit) {\n  return [];\n}\n\n// Filtr Milestone: Instrukcja warunkowa sprawdzająca, czy wiadomość zaczyna się od [Milestone]\n// Jeśli nie, zwracamy pustą tablicę (n8n wstrzyma dalsze wykonywanie dla tego commita)\nif (!headCommit.message.startsWith(\"[Milestone]\")) {\n  return [];\n}\n\n// Zwracamy sformatowany JSON rozszerzony o pole project_name\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message,\n  project_name: repositoryName\n};"
+        "jsCode": "const payload = $input.all()[0].json.body;\nconst headCommit = payload.head_commit;\nconst repositoryName = payload.repository.name;\n\nif (!headCommit) {\n  return [];\n}\n\nif (!headCommit.message.startsWith(\"[Milestone]\")) {\n  return [];\n}\n\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message,\n  project_name: repositoryName\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -49,6 +49,8 @@
       ],
       "id": "ce663b2e-f669-4439-adc9-a3f9a57ec8d8",
       "name": "Google_Gemini",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
       "credentials": {
         "httpMultipleHeadersAuth": {
           "id": "3ItB9QvUCLWwIQCs",
@@ -181,7 +183,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "620ec184-bf8f-49bd-8408-54bc0adedb37",
+  "versionId": "fbc4333b-4169-41ec-a429-615c417b0b3f",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "758919c32b34f9786e1accdb755ce7bfbc1b60f9bd5e8d1249e038034fd5eacd"

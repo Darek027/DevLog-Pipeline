@@ -1,0 +1,18 @@
+# Zero-Touch DevLog Pipeline 🚀
+
+## Infrastructure Update: 24/7 Cloud Deployment
+
+This repository contains the infrastructure configuration (n8n Workflows as Code) for the Zero-Touch DevLog Pipeline.
+
+### Architecture Shift: Local Docker to 24/7 Hostinger Server
+Previously, the n8n logic engine was executed locally via Docker Desktop, requiring a dynamic ngrok tunnel to expose the webhook endpoint to GitHub[cite: 3, 4]. 
+
+**Current Production State:**
+The workflow is now deployed on an always-on Hostinger server, utilizing an Event-Driven Architecture.
+* **Trigger:** GitHub Push Webhook firing at a static URL immediately after a `git push`[cite: 1, 3].
+* **Logic Engine:** Self-hosted n8n instance (Always ON)[cite: 1].
+* **Data Parsing:** A Vanilla JavaScript `Code` node strictly extracts the `commit_hash` and `message` from the `head_commit` payload[cite: 2, 3].
+* **Storage Layer:** Supabase PostgreSQL instance receiving formatted POST requests. Strict Row Level Security (RLS) is applied to ensure public access is restricted to 'published' logs only[cite: 1, 3].
+
+### Deployment & Testing
+Any new commit pushed to this repository acts as a trigger. The Hostinger-hosted webhook catches the payload, and n8n automatically pushes a new 'draft' record into the Supabase `devlogs` table without any manual intervention[cite: 1, 3].
