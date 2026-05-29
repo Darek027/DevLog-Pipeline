@@ -13,13 +13,13 @@
         0,
         0
       ],
-      "id": "4e3bc86c-b4dc-484d-bd67-663f6d1aece1",
+      "id": "89e50c94-e483-460c-b36e-ee4275b1da73",
       "name": "Webhook",
       "webhookId": "754c58a1-b9e7-40f5-a523-2b560d3cb751"
     },
     {
       "parameters": {
-        "jsCode": "const payload = $input.all()[0].json.body;\nconst headCommit = payload.head_commit;\nconst repositoryName = payload.repository.name;\n\nif (!headCommit) {\n  return [];\n}\n\nif (!headCommit.message.startsWith(\"[Milestone]\")) {\n  return [];\n}\n\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message,\n  project_name: repositoryName\n};"
+        "jsCode": "const payload = $input.all()[0].json.body;\n\nconst headCommit = payload.head_commit;\nconst repositoryName = payload.repository.name;\n\nif (!headCommit) {\n  return [];\n}\n\nif (!headCommit.message.startsWith(\"[Milestone]\")) {\n  return [];\n}\n\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message,\n  project_name: repositoryName\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -27,7 +27,7 @@
         208,
         0
       ],
-      "id": "cb6bc008-4ad0-4d2f-8cc2-11acb20372e8",
+      "id": "90b2cda4-25e4-4757-9251-22062ac74f53",
       "name": "Code in JavaScript"
     },
     {
@@ -38,7 +38,7 @@
         "nodeCredentialType": "httpMultipleHeadersAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  JSON.stringify({\n    \"contents\": [{\n      \"parts\": [{\n        \"text\": \"Act as an elite Enterprise Software Architect. I will provide you with a git diff. Analyze the code changes and write a brief, professional release note for a changelog. Requirements: Language must be English. Tone: Engineering, concise, and business-value focused (like 'bAIplot.com Platform Inception'). No technical jargon like 'deleted line 5'. Maximum 2-3 sentences. \\n\\nGit Diff to analyze:\\n\" + $json.data\n      }]\n    }]\n  })\n}}",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"contents\": [{\n      \"parts\": [{\n        \"text\": \"Act as an elite Enterprise Software Architect. I will provide you with a git diff. Analyze the code changes and write a brief, professional release note for a changelog. Requirements: Language must be English. Tone: Engineering, concise, and business-value focused (like 'bAIplot.com Platform Inception'). No technical jargon like 'deleted line 5'. Maximum 2-3 sentences. \\n\\nGit Diff to analyze:\\n\" + $json.data\n      }]\n    }]\n  })\n}}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
@@ -47,14 +47,14 @@
         624,
         0
       ],
-      "id": "ce663b2e-f669-4439-adc9-a3f9a57ec8d8",
+      "id": "a498360c-8ac4-4c6d-bfad-02c210550677",
       "name": "Google_Gemini",
       "retryOnFail": true,
       "waitBetweenTries": 5000,
       "credentials": {
         "httpMultipleHeadersAuth": {
-          "id": "3ItB9QvUCLWwIQCs",
-          "name": "Google Gemini API Key"
+          "id": "Nuv8WsZ0fzSbquyG",
+          "name": "Gemini_Google"
         }
       }
     },
@@ -86,11 +86,11 @@
         416,
         0
       ],
-      "id": "4fbab5c8-a465-4989-987b-ee31a659623c",
+      "id": "f2865107-9197-40ac-b60f-9bf4a3d48f32",
       "name": "Github",
       "credentials": {
         "httpMultipleHeadersAuth": {
-          "id": "xctnWHEtG83qeEbU",
+          "id": "QwH7NdOv6h0IJLQD",
           "name": "GitHub Token"
         }
       }
@@ -121,11 +121,11 @@
         832,
         0
       ],
-      "id": "53c229f2-1137-43a3-b18c-3ae29a466100",
+      "id": "f692f991-3259-4748-845d-112a136f7d60",
       "name": "Supabase_Entry",
       "credentials": {
         "supabaseApi": {
-          "id": "8O9ZdtqjPqLDTmgD",
+          "id": "UzJCRFn8r4m8X9uU",
           "name": "Supabase account"
         }
       }
@@ -178,16 +178,17 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate"
+    "binaryMode": "separate",
+    "availableInMCP": true
   },
-  "versionId": "fbc4333b-4169-41ec-a429-615c417b0b3f",
+  "versionId": "7b813e0f-c1b7-417f-b014-e1e101f86b10",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "758919c32b34f9786e1accdb755ce7bfbc1b60f9bd5e8d1249e038034fd5eacd"
+    "instanceId": "8aa1b8f81d1977a3828eabdbe14920035c3addb3a6997c0885fec69b3bf8bdfb"
   },
-  "id": "WHLWt48WYSo65pXF",
+  "id": "6py1WRdPxr1lEQ52",
   "tags": []
 }
