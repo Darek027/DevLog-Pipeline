@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $input.all()[0].json.body;\n\nconst headCommit = payload.head_commit;\nconst repositoryName = payload.repository.name;\n\nif (!headCommit) {\n  return [];\n}\n\nif (!headCommit.message.startsWith(\"[Milestone]\")) {\n  return [];\n}\n\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message,\n  project_name: repositoryName\n};"
+        "jsCode": "const payload = $input.all()[0].json.body;\n\nconst commits = payload.commits || [];\nconst repositoryName = payload.repository.name;\n\n// Find all [Milestone] commits, not just head_commit\nconst milestoneCommits = commits.filter(c => c.message.startsWith('[Milestone]'));\n\nif (milestoneCommits.length === 0) {\n  return [];\n}\n\n// Process the most recent [Milestone] commit\nconst headCommit = milestoneCommits[milestoneCommits.length - 1];\n\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message,\n  project_name: repositoryName\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -184,9 +184,11 @@
     "binaryMode": "separate",
     "availableInMCP": true
   },
-  "versionId": "7b813e0f-c1b7-417f-b014-e1e101f86b10",
+  "versionId": "a3989c5c-b26f-4659-8db5-44815cd2fa83",
   "meta": {
     "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
     "instanceId": "8aa1b8f81d1977a3828eabdbe14920035c3addb3a6997c0885fec69b3bf8bdfb"
   },
   "id": "6py1WRdPxr1lEQ52",
