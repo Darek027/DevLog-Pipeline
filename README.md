@@ -249,9 +249,15 @@ Do this for every repository you want the pipeline to track.
 
 1. Go to the GitHub repository → **Settings → Webhooks → Add webhook**.
 2. Fill in:
-   - **Payload URL**: the webhook URL from Step 7
+   - **Payload URL**: the webhook URL from Step 7 **with Basic Auth credentials in it**:
+     `https://<user>:<password>@<your-n8n>/webhook/github-push`. The Webhook node uses
+     *Authentication → Basic Auth* with an n8n credential holding the same user/password, so n8n rejects
+     (401) any request without them before the workflow runs. GitHub sends the credentials from the URL
+     as an `Authorization: Basic` header (verified 2026-10-14).
    - **Content type**: `application/json`
-   - **Secret**: generate a random string (e.g. use a password manager or `openssl rand -hex 32`) and save it in your password manager — this proves to n8n that payloads genuinely come from GitHub
+   - **Secret**: optional. GitHub signs payloads with it (`X-Hub-Signature-256`), but **this workflow does
+     not verify the signature** — Basic Auth is what protects the endpoint. Without auth anyone who
+     guesses the URL can push fake changelog entries.
    - **Which events?**: **Just the push event**
 3. Make sure **Active** is checked.
 4. Click **Add webhook**.
