@@ -107,10 +107,13 @@ Please:
 2. In the left sidebar click **Workflows**.
 3. Click the **+** button (top right) → **Import from file**.
 4. Select `DevLog Pipeline.json`.
-5. The workflow opens with 5 nodes in a horizontal chain:
+5. The workflow opens with 6 nodes:
    ```
    Webhook → Code in JavaScript → Github → Google_Gemini → Supabase_Entry
+                                                  └─(error)→ Fallback — notka (3.6-flash) → Supabase_Entry
    ```
+   `Google_Gemini` uses `gemini-3.5-flash-lite`; when it returns an error, the fallback node retries the same prompt on
+   `gemini-3.6-flash` (`thinkingLevel: minimal`). If both fail, nothing is written — an empty note never reaches the site.
 6. Do **not** activate it yet — enter credentials first.
 
 ---
@@ -147,7 +150,7 @@ Please:
 #### 3d — Locate your Supabase credentials
 
 1. In Supabase go to **Project Settings → API**.
-2. Note the **Project URL** and the **service_role** key.
+2. Note the **Project URL** and a **secret** key (`sb_secret_…`, Settings → API Keys). Legacy projects may still show a `service_role` JWT — prefer the new secret key.
 
 > These values will be entered directly into n8n's Credential Manager in Step 6.
 > Do not copy them into any notes, chat, or document.
@@ -214,17 +217,18 @@ All secrets are entered here, inside n8n's encrypted Credential Manager. **This 
 2. Name it: `Supabase account`
 3. Fill in:
    - **Host**: your Supabase Project URL
-   - **Service Role Secret**: your Supabase service_role key
+   - **Service Role Secret**: your Supabase secret key (`sb_secret_…`)
 4. Click **Save**.
 
-> Use the **service_role** key (not `anon`) — n8n needs write access to insert rows.
+> Use the **secret** key (not the publishable / `anon` one) — n8n needs write access to insert rows.
 
 #### 6d — Attach credentials to nodes
 
 Back in your workflow:
 
 1. Click the **Github** node → under Authentication select `GitHub Token`.
-2. Click the **Google_Gemini** node → select `Google Gemini API Key`.
+2. Click the **Google_Gemini** node and the **Fallback — notka (3.6-flash)** node → select `Google Gemini API Key` in both.
+   The **Webhook** node expects a *Basic Auth* credential (user + password you choose) — see Step 8.
 3. Click the **Supabase_Entry** node → select `Supabase account`.
 4. Click **Save** (top right).
 
@@ -317,7 +321,7 @@ The AI reads the full git diff and writes a concise, professional changelog entr
 - The node retries automatically — check the execution log for the HTTP status code returned.
 
 **No row in Supabase**
-- Confirm the credential uses the **service_role** key, not `anon`.
+- Confirm the credential uses the **secret** key, not the publishable / `anon` one.
 - The table must be named exactly `devlogs` (lowercase) with columns `commit_hash`, `project_name`, and `message`.
 
 **Commit was ignored**

@@ -2,68 +2,83 @@
   "name": "DevLog Pipeline",
   "nodes": [
     {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "github-push",
-        "options": {}
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "UrGyKRZQJU5ovFDn",
+          "name": "DevLog GitHub Webhook (Basic)"
+        }
       },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
+      "id": "89e50c94-e483-460c-b36e-ee4275b1da73",
+      "name": "Webhook",
+      "parameters": {
+        "authentication": "basicAuth",
+        "httpMethod": "POST",
+        "options": {},
+        "path": "github-push"
+      },
       "position": [
         0,
         0
       ],
-      "id": "89e50c94-e483-460c-b36e-ee4275b1da73",
-      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
       "webhookId": "754c58a1-b9e7-40f5-a523-2b560d3cb751"
     },
     {
+      "id": "90b2cda4-25e4-4757-9251-22062ac74f53",
+      "name": "Code in JavaScript",
       "parameters": {
         "jsCode": "const payload = $input.all()[0].json.body;\n\nconst commits = payload.commits || [];\nconst repositoryName = payload.repository.name;\n\n// Find all [Milestone] commits, not just head_commit\nconst milestoneCommits = commits.filter(c => c.message.startsWith('[Milestone]'));\n\nif (milestoneCommits.length === 0) {\n  return [];\n}\n\n// Process the most recent [Milestone] commit\nconst headCommit = milestoneCommits[milestoneCommits.length - 1];\n\nreturn {\n  commit_hash: headCommit.id,\n  message: headCommit.message,\n  project_name: repositoryName\n};"
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
       "position": [
         208,
         0
       ],
-      "id": "90b2cda4-25e4-4757-9251-22062ac74f53",
-      "name": "Code in JavaScript"
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
     },
     {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpMultipleHeadersAuth",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{\n  JSON.stringify({\n    \"contents\": [{\n      \"parts\": [{\n        \"text\": \"Act as an elite Enterprise Software Architect. I will provide you with a git diff. Analyze the code changes and write a brief, professional release note for a changelog. Requirements: Language must be English. Tone: Engineering, concise, and business-value focused (like 'bAIplot.com Platform Inception'). No technical jargon like 'deleted line 5'. Maximum 2-3 sentences. \\n\\nGit Diff to analyze:\\n\" + $json.data\n      }]\n    }]\n  })\n}}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        624,
-        0
-      ],
-      "id": "a498360c-8ac4-4c6d-bfad-02c210550677",
-      "name": "Google_Gemini",
-      "retryOnFail": true,
-      "waitBetweenTries": 5000,
       "credentials": {
         "httpMultipleHeadersAuth": {
           "id": "Nuv8WsZ0fzSbquyG",
           "name": "Gemini_Google"
         }
-      }
+      },
+      "id": "a498360c-8ac4-4c6d-bfad-02c210550677",
+      "name": "Google_Gemini",
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "jsonBody": "={{\n  JSON.stringify({\n    \"contents\": [{\n      \"parts\": [{\n        \"text\": \"Act as an elite Enterprise Software Architect. I will provide you with a git diff. Analyze the code changes and write a brief, professional release note for a public changelog. Requirements: Language must be English, even when commit messages or code comments are in another language. Tone: engineering, concise and business-value focused: say what changed and why it matters. Output plain text only: no title, no heading, no markdown (no asterisks, bullet points or backticks), and do not start with a project or release name. No technical jargon like 'deleted line 5'. Maximum 2-3 sentences. \\n\\nGit Diff to analyze:\\n\" + $json.data\n      }]\n    }]\n  })\n}}",
+        "method": "POST",
+        "nodeCredentialType": "httpMultipleHeadersAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent"
+      },
+      "position": [
+        624,
+        0
+      ],
+      "retryOnFail": true,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "waitBetweenTries": 5000
     },
     {
+      "credentials": {
+        "httpMultipleHeadersAuth": {
+          "id": "QwH7NdOv6h0IJLQD",
+          "name": "GitHub Token"
+        }
+      },
+      "id": "f2865107-9197-40ac-b60f-9bf4a3d48f32",
+      "name": "Github",
       "parameters": {
-        "url": "=https://api.github.com/repos/Darek027/{{ $json.project_name }}/commits/{{ $json.commit_hash }}",
         "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "httpMultipleHeadersAuth",
-        "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
@@ -72,32 +87,34 @@
             }
           ]
         },
+        "nodeCredentialType": "httpMultipleHeadersAuth",
         "options": {
           "response": {
             "response": {
               "responseFormat": "text"
             }
           }
-        }
+        },
+        "sendHeaders": true,
+        "url": "=https://api.github.com/repos/Darek027/{{ $json.project_name }}/commits/{{ $json.commit_hash }}"
       },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
       "position": [
         416,
         0
       ],
-      "id": "f2865107-9197-40ac-b60f-9bf4a3d48f32",
-      "name": "Github",
-      "credentials": {
-        "httpMultipleHeadersAuth": {
-          "id": "QwH7NdOv6h0IJLQD",
-          "name": "GitHub Token"
-        }
-      }
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
     },
     {
+      "credentials": {
+        "supabaseApi": {
+          "id": "UzJCRFn8r4m8X9uU",
+          "name": "Supabase account"
+        }
+      },
+      "id": "f692f991-3259-4748-845d-112a136f7d60",
+      "name": "Supabase_Entry",
       "parameters": {
-        "tableId": "=devlogs",
         "fieldsUi": {
           "fieldValues": [
             {
@@ -110,47 +127,82 @@
             },
             {
               "fieldId": "message",
-              "fieldValue": "={{ $json.candidates[0].content.parts[0].text }}"
+              "fieldValue": "={{ ($json.candidates[0].content.parts.find(p => !p.thought && p.text) || $json.candidates[0].content.parts[0]).text }}"
             }
           ]
-        }
+        },
+        "tableId": "=devlogs"
       },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
       "position": [
         832,
         0
       ],
-      "id": "f692f991-3259-4748-845d-112a136f7d60",
-      "name": "Supabase_Entry",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1
+    },
+    {
       "credentials": {
-        "supabaseApi": {
-          "id": "UzJCRFn8r4m8X9uU",
-          "name": "Supabase account"
+        "httpMultipleHeadersAuth": {
+          "id": "Nuv8WsZ0fzSbquyG",
+          "name": "Gemini_Google"
         }
-      }
+      },
+      "id": "8783a65d-3ade-4721-8219-b52bdf9e89b0",
+      "name": "Fallback — notka (3.6-flash)",
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"Act as an elite Enterprise Software Architect. I will provide you with a git diff. Analyze the code changes and write a brief, professional release note for a public changelog. Requirements: Language must be English, even when commit messages or code comments are in another language. Tone: engineering, concise and business-value focused: say what changed and why it matters. Output plain text only: no title, no heading, no markdown (no asterisks, bullet points or backticks), and do not start with a project or release name. No technical jargon like 'deleted line 5'. Maximum 2-3 sentences. \\n\\nGit Diff to analyze:\\n\" + $json.data }] }], generationConfig: { thinkingConfig: { thinkingLevel: 'minimal' } } }) }}",
+        "method": "POST",
+        "nodeCredentialType": "httpMultipleHeadersAuth",
+        "options": {
+          "timeout": 30000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent"
+      },
+      "position": [
+        624,
+        220
+      ],
+      "retryOnFail": false,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Code in JavaScript",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Code in JavaScript": {
       "main": [
         [
           {
+            "index": 0,
             "node": "Github",
-            "type": "main",
-            "index": 0
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Fallback — notka (3.6-flash)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Supabase_Entry",
+            "type": "main"
+          }
+        ],
+        []
+      ]
+    },
+    "Github": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Google_Gemini",
+            "type": "main"
           }
         ]
       ]
@@ -159,38 +211,38 @@
       "main": [
         [
           {
+            "index": 0,
             "node": "Supabase_Entry",
-            "type": "main",
-            "index": 0
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Fallback — notka (3.6-flash)",
+            "type": "main"
           }
         ]
       ]
     },
-    "Github": {
+    "Webhook": {
       "main": [
         [
           {
-            "node": "Google_Gemini",
-            "type": "main",
-            "index": 0
+            "index": 0,
+            "node": "Code in JavaScript",
+            "type": "main"
           }
         ]
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": true
+    "executionOrder": "v1"
   },
-  "versionId": "a3989c5c-b26f-4659-8db5-44815cd2fa83",
   "meta": {
-    "templateCredsSetupCompleted": true,
-    "aiBuilderAssisted": true,
-    "builderVariant": "mcp",
-    "instanceId": "8aa1b8f81d1977a3828eabdbe14920035c3addb3a6997c0885fec69b3bf8bdfb"
+    "templateCredsSetupCompleted": false
   },
-  "id": "6py1WRdPxr1lEQ52",
   "tags": []
 }
